@@ -31,6 +31,13 @@ export default function Home() {
         <Interactive
           as={Link}
           {...s.link}
+          to="/info-vis"
+        >Information Visualization Demo</Interactive>
+      </div>
+      <div style={s.pageLinkContainer}>
+        <Interactive
+          as={Link}
+          {...s.link}
           to="/example"
         >Example page</Interactive>
       </div>

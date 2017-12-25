@@ -8,6 +8,7 @@ const breadCrumbTitles = {
   '': 'Home',
   example: 'Example',
   'two-deep': 'Two Deep',
+  'info-vis': 'InfoVis Demo',
 };
 
 function BreadcrumbsItem({ match }) {
