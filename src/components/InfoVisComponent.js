@@ -10,7 +10,9 @@ import vt1 from '../assets/VT1.csv';
 import vt2 from '../assets/VT2.csv';
 import vt3 from '../assets/VT3.csv';
 
-import * as d3 from 'd3';
+import * as d3Original from 'd3';
+import * as d3ScaleChromatic from 'd3-scale-chromatic';
+const d3 = Object.assign({}, d3Original, d3ScaleChromatic);
 
 let ssv = d3.dsvFormat(';');
 
@@ -93,18 +95,29 @@ function mutualApprovalHeatMap(dataSets, elementId) {
       .attr('transform', `translate(${gridSize / 2}, -6)`)
       .attr('class', 'label-candidate label-candidate-x');
 
+  let maxVal = 0;
   const mutualApData = [];
   candidates.forEach(cand1 => {
     const row = {};
 
     candidates.forEach((cand2, j) => {
-      const countIntersection = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 && item[`AV_${cand2}`] == 1).length;
-      const countUnion = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 || item[`AV_${cand2}`] == 1).length;
-      row[cand2] = countIntersection / countUnion; 
-      // row.push(countIntersection / countUnion);
+      if (cand1 === cand2) {
+        row[cand2] = 0
+      } else {
+        const countIntersection = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 && item[`AV_${cand2}`] == 1).length;
+        const countUnion = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 || item[`AV_${cand2}`] == 1).length;
+        row[cand2] = countIntersection / countUnion;
+        if (maxVal < countIntersection / countUnion) {
+          maxVal = countIntersection / countUnion;
+        }
+        // row.push(countIntersection / countUnion);
+      }
     });
     mutualApData.push(row)
   });
+
+  const colorScale = d3.scaleSequential(d3.interpolateBlues)
+    .domain([0, maxVal]);
 
   const cellGroups = svg.append('g');
   candidates.forEach((cand, j) => {
@@ -115,12 +128,9 @@ function mutualApprovalHeatMap(dataSets, elementId) {
         .attr('transform', (d, i) => `translate(${i * gridSize}, ${j * gridSize})`)
     group.append('rect')
       .attr('stroke', '#333')
-      .attr('fill', 'none')
+      .attr('fill', d => colorScale(d[cand]))
       .attr('width', gridSize)
       .attr('height', gridSize);
-    group.append('text')
-      .text(d => d[cand])
-      .style('stroke', '#f00')
     group.exit().remove();
   });
 }
