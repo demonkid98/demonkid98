@@ -11,6 +11,7 @@ module.exports = {
   module: {
     rules: [
       { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' },
+      { test: /\.css$/, loader: ['style-loader', 'css-loader']},
       { test: /\.(csv|tsv)$/, loader: 'raw-loader'},
       { test: /\.(png|jpe?g|gif)$/, loader: 'file-loader'},
     ],

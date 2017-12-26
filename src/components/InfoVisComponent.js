@@ -5,6 +5,7 @@ import PageNotFound from './PageNotFound';
 import s from '../styles/infoVisComponent.style';
 
 import _ from 'lodash';
+import numeral from 'numeral';
 
 import vt1 from '../assets/VT1.csv';
 import vt2 from '../assets/VT2.csv';
@@ -14,12 +15,14 @@ import * as d3Original from 'd3';
 import * as d3ScaleChromatic from 'd3-scale-chromatic';
 const d3 = Object.assign({}, d3Original, d3ScaleChromatic);
 
+import '../styles/info-vis.css';
+
 let ssv = d3.dsvFormat(';');
 
 const margin = { top: 50, right: 0, bottom: 100, left: 45 };
 const width = 640 - margin.left - margin.right;
 const height = 480 - margin.top - margin.bottom;
-const gridSize = Math.floor(height / 10);
+const gridSize = Math.floor(height / 11);
 const legendElementWidth = gridSize * 2;
 
 function parseSsvData(...files) {
@@ -65,11 +68,12 @@ function extractCandidates(columns) {
 function mutualApprovalHeatMap(dataSets, elementId) {
   const svg = d3.select(`#${elementId}`)
     .append('svg')
+    .attr('font-size', '80%')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
-    
+
   const candidates = extractCandidates(dataSets.columns);
   const yLabels = svg.append('g')
     .attr('class', 'axis axis-y')
@@ -131,8 +135,55 @@ function mutualApprovalHeatMap(dataSets, elementId) {
       .attr('fill', d => colorScale(d[cand]))
       .attr('width', gridSize)
       .attr('height', gridSize);
+    group.append('text')
+      .text(d => numeral(d[cand]).format('0.00'))
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('visibility', (d, i) => i === j ? 'hidden' : 'visible')
+      .attr('x', gridSize / 2)
+      .attr('y', gridSize / 2)
+      .attr('stroke', d => d[cand] >= maxVal / 2 ? '#fff' : '#333')
+      .attr('font-size', '70%');
     group.exit().remove();
   });
+
+  let scaleBarPoints = [];
+  let nbPoints = 101;
+  let barWidth = 15;
+  let barHeight = height / nbPoints;
+  for (let i = nbPoints - 1; i >= 0; i--) {
+    scaleBarPoints.push(maxVal * i / nbPoints);
+  }
+
+  let legend = svg.append('g')
+    .attr('class', 'scale-color')
+    .attr('transform', `translate(400, 0)`)
+    .attr('font-size', '70%')
+    .attr('text-anchor', 'end');
+  legend.append('text')
+    .attr('dominant-baseline', 'middle')
+    .attr('x', -5)
+    .attr('y', 0)
+    .text(numeral(maxVal).format('0.00'));
+  legend.append('text')
+    .attr('dominant-baseline', 'middle')
+    .attr('x', -5)
+    .attr('y', height)
+    .text('0.00');
+  legend.append('rect')
+      .attr('width', barWidth)
+      .attr('height', height)
+      .attr('fill', 'none')
+      .attr('stroke', '#333');
+  legend.selectAll('bars')
+    .data(scaleBarPoints)
+    .enter()
+    .append('rect')
+      .attr('x', 0)
+      .attr('y', (d, i) => i * barHeight)
+      .attr('width', barWidth)
+      .attr('height', barHeight)
+      .attr('fill', colorScale);
 }
 
 class InfoVisComponent extends React.Component {
