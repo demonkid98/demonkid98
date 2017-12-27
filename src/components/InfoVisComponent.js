@@ -2,7 +2,6 @@ import React from 'react';
 import Interactive from 'react-interactive';
 import { Switch, Route, Link } from 'react-router-dom';
 import PageNotFound from './PageNotFound';
-import s from '../styles/infoVisComponent.style';
 
 import _ from 'lodash';
 import numeral from 'numeral';
@@ -193,16 +192,13 @@ class InfoVisComponent extends React.Component {
 
   componentDidMount() {
     let dataSets = parseSsvData(vt1, vt2, vt3);
-    console.log(dataSets)
     mutualApprovalHeatMap(dataSets, 'mutual-ap-container');
-    
-    
   }
 
   render() {
     return (
       <section>
-        <h1 style={s.title}>Information Visualization Demo</h1>
+        <h1>Information Visualization Demo</h1>
         <div id="mutual-ap-container" className="graph-container" />
       </section>
     );

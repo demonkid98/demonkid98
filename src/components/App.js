@@ -4,6 +4,7 @@ import { Switch, Route } from 'react-router-dom';
 import Home from './Home';
 import ExampleComponent from './ExampleComponent';
 import InfoVisComponent from './InfoVisComponent';
+import InfoVisApEvalComponent from './InfoVisApEvalComponent';
 import PageNotFound from './PageNotFound';
 import Breadcrumbs from './Breadcrumbs';
 import s from '../styles/app.style';
@@ -26,7 +27,8 @@ export default function App() {
       <Switch>
         <Route exact path="/" component={Home} />
         <Route path="/example" component={ExampleComponent} />
-        <Route path="/info-vis" component={InfoVisComponent} />
+        <Route path="/info-vis/approval-correlation" component={InfoVisComponent} />
+        <Route path="/info-vis/approval-vs-evaluation" component={InfoVisApEvalComponent} />
         <Route component={PageNotFound} />
       </Switch>
 
