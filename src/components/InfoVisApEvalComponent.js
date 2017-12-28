@@ -90,7 +90,7 @@ function approvalVsEvalGraph(dataSets, elementId) {
 
   const xTicks = _.map(candidates, (c, i) => (width - 100) * i / candidates.length + 50);
   let x = d3.scaleOrdinal().range(xTicks);
-  let y = d3.scaleLinear().range([height, 0]);
+  let y = d3.scaleLinear().rangeRound([height, 0]);
   let z = d3.scaleLinear().range([0, 25]);
   
   x.domain(candidates);
@@ -106,47 +106,45 @@ function approvalVsEvalGraph(dataSets, elementId) {
   svg.append('g')
     .call(d3.axisLeft(y));
 
-  const nbBins = 13;
-  const binEvals = {};
-  const maxCounts = {};
-  candidates.forEach(cand => {
-    binEvals[cand] = {'0': Array(nbBins).fill(0), '1': Array(nbBins).fill(0)};
-    maxCounts[cand] = {};
-
-    dataSets.forEach(item => {
-      const bin = Math.min(Math.floor((item[`EV_${cand}`] - minEval) / ((maxEval - minEval) / nbBins)), nbBins - 1);
-      const cat = item[`AV_${cand}`].toString();
-      binEvals[cand][cat][bin] += 1;
-    });
-    maxCounts[cand]['0'] = Math.max.apply(null, binEvals[cand]['0']);
-    maxCounts[cand]['1'] = Math.max.apply(null, binEvals[cand]['1']);
-  });
+  const nbBins = 26;
 
   const chart = svg.append('g');
   candidates.forEach((cand, i) => {
-    chart.selectAll(`.bar-pos-${i}`)
-      .data(binEvals[cand]['1'])
-      .enter()
-      .append('rect')
-        .attr('class', `bar bar-pos-${i}`)
-        .attr('x', x(cand))
-        .attr('y', (d, j) => y(j * (maxEval - minEval) / nbBins + minEval))
-        .attr('width', d => z(d / maxCounts[cand]['1']))
-        .attr('height', height / nbBins)
-        .attr('stroke', '#333')
-        .attr('fill', d3.hsl(colors[cand]).brighter(.5))
+    const series0 = dataSets.filter(item => item[`AV_${cand}`] === 0).map(item => item[`EV_${cand}`] || 0);
+    const series1 = dataSets.filter(item => item[`AV_${cand}`] === 1).map(item => item[`EV_${cand}`] || 0);
+
+    let bins0 = d3.histogram()
+      .domain(y.domain())
+      .thresholds(y.ticks(nbBins)) (series0);
+    let bins1 = d3.histogram()
+      .domain(y.domain())
+      .thresholds(y.ticks(nbBins)) (series1);
+
+    let maxCount0 = d3.max(bins0, bin => bin.length);
+    let maxCount1 = d3.max(bins1, bin => bin.length);
 
     chart.selectAll(`.bar-neg-${i}`)
-      .data(binEvals[cand]['0'])
-      .enter()
-      .append('rect')
-        .attr('class', `bar bar-neg-${i}`)
-        .attr('x', (d, j) => x(cand) - z(d / maxCounts[cand]['0']))
-        .attr('y', (d, j) => y((j + 1) * (maxEval - minEval) / nbBins + minEval))
-        .attr('width', d => z(d / maxCounts[cand]['0']))
-        .attr('height', height / nbBins)
-        .attr('stroke', '#333')
-        .attr('fill', d3.hsl(colors[cand]).brighter(.5))
+      .data(bins0)
+      .enter().append('g')
+        .attr('class', `bar-neg-${i}`)
+        .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
+        .append('rect')
+          .attr('x', d => - z(d.length / maxCount0))
+          .attr('width', d => z(d.length / maxCount0))
+          .attr('height', height / nbBins)
+          .attr('fill', d3.hsl(colors[cand]).darker(1))
+          .attr('stroke', '#420000');
+          
+    chart.selectAll(`.bar-pos-${i}`)
+      .data(bins1)
+      .enter().append('g')
+        .attr('class', `bar-pos-${i}`)
+        .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
+        .append('rect')
+          .attr('width', d => z(d.length / maxCount1))
+          .attr('height', height / nbBins)
+          .attr('fill', colors[cand])
+          .attr('stroke', '#00114c');
   });
 }
 
