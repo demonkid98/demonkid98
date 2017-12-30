@@ -172,8 +172,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
   legend.append('rect')
       .attr('width', barWidth)
       .attr('height', height)
-      .attr('fill', 'none')
-      .attr('stroke', '#333');
+      .attr('class', 'scale-color-edge');
   legend.selectAll('bars')
     .data(scaleBarPoints)
     .enter()
@@ -182,6 +181,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
       .attr('y', (d, i) => i * barHeight)
       .attr('width', barWidth)
       .attr('height', barHeight)
+      .attr('stroke', colorScale)
       .attr('fill', colorScale);
 }
 

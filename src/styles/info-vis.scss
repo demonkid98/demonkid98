@@ -63,6 +63,12 @@ body {
   .outfocus {
     opacity: .25;
   }
+
+  .scale-color-edge {
+    fill: none;
+    stroke: #333;
+    stroke-width: 2;
+  }
 }
 
 #approval-vs-eval-filter {
