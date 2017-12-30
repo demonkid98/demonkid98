@@ -135,7 +135,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
 
     const bins = d3.histogram()
       .domain(y.domain())
-      .thresholds(y.ticks(nbBins)) (series);
+      .thresholds(nbBins) (series);
 
     const maxCount = d3.max(bins, bin => bin.length);
 
@@ -166,8 +166,27 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
         .data(bins)
           .enter().append('g')
             .attr('class', `bar-${i}`)
-            .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
+            .attr('transform', d => `translate(${x(cand)}, ${y(d.x1)})`)
             .append('rect')
+              .on('mouseover', (d, j) => {
+                const tooltip = svg.append('g')
+                  .attr('id', `tooltip-bar-${cand}-${j}`)
+                  .attr('class', 'tooltip')
+                  .attr('transform', `translate(${x(cand) + 3}, ${y(d.x0) + 3})`);
+                tooltip.append('rect')
+                  .attr('width', 100)
+                  .attr('height', 38);
+                tooltip.append('text')
+                  .text(`EV: ${numeral(d.x0).format('0.00')}-${numeral(d.x1).format('0.00')}`)
+                  .attr('transform', 'translate(5, 15)');
+                tooltip.append('text')
+                  .text(`Observation: ${d.length}`)
+                  .attr('transform', 'translate(5, 30)');
+              })
+              .on('mouseout', (d, j) => {
+                svg.selectAll(`#tooltip-bar-${cand}-${j}`)
+                  .remove();
+              })
               .attr('width', d => z(d.length / maxCount))
               .attr('height', height / nbBins)
               .attr('fill', color)

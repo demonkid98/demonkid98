@@ -46,6 +46,19 @@ body {
       stroke-dasharray: 1, 2;
     }
   }
+
+  .tooltip {
+    pointer-events: none;
+
+    > rect {
+      fill: rgba(0, 0, 0, .8);
+      stroke: #000;
+    }
+
+    > text {
+      fill: #fff;
+    }
+  }
 }
 
 #approval-vs-eval-filter {
