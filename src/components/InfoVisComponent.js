@@ -14,7 +14,7 @@ import * as d3Original from 'd3';
 import * as d3ScaleChromatic from 'd3-scale-chromatic';
 const d3 = Object.assign({}, d3Original, d3ScaleChromatic);
 
-import '../styles/info-vis.css';
+import '../styles/info-vis.scss';
 
 let ssv = d3.dsvFormat(';');
 

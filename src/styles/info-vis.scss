@@ -1,0 +1,78 @@
+// TODO make this global rule
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+@mixin clearfix {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.clearfix:after {
+  @include clearfix;
+}
+
+body {
+  font-size: .85rem;
+}
+
+.graph-container {
+  .axis.axis-x {
+    .tick > text {
+      fill: none;
+    }
+    
+    .domain {
+      opacity: .25;
+      stroke-dasharray: 1, 2;
+    }
+  }
+
+
+  .grid {
+    .domain {
+      stroke: none;
+    }
+
+    .tick {
+      opacity: .25;
+      stroke-dasharray: 1, 2;
+    }
+  }
+}
+
+#approval-vs-eval-filter {
+  .candidate-legend-box {
+    border: 1px solid #333;
+    display: inline-block;
+    height: .75em;
+    width: 1em;
+  }
+
+  .form-block {
+    margin-bottom: 1rem;
+
+    > label {
+      float: left;
+      width: 135px;
+    }
+
+    > div {
+      margin-left: 150px;
+      
+      > div {
+        margin: 0 -10px;
+        &:after {
+          @include clearfix;
+        }
+  
+        label.check-radio {
+          float: left;
+          padding: 0 10px;
+          width: percentage(1/6);
+        }
+      }
+    }
+  }
+}

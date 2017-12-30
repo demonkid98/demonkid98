@@ -13,7 +13,7 @@ import vt3 from '../assets/VT3.csv';
 import * as d3 from 'd3';
 window.d3 = d3;
 
-import '../styles/info-vis.css';
+import '../styles/info-vis.scss';
 
 let ssv = d3.dsvFormat(';');
 
@@ -103,21 +103,31 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-  const xTicks = _.map(candidates, (c, i) => (width - 100) * i / candidates.length + 50);
+  const xTicks = _.map(candidates, (c, i) => (width - 50) * i / candidates.length + 10);
   let x = d3.scaleOrdinal().range(xTicks);
   let y = d3.scaleLinear().rangeRound([height, 0]);
-  let z = d3.scaleLinear().range([0, 25]);
+  let z = d3.scaleLinear().range([0, 30]);
 
   x.domain(candidates);
   y.domain([minEval, maxEval]);
   z.domain([0, 1]);
 
   svg.append('g')
+    .attr('class', 'axis axis-x')
     .attr('transform', `translate(0, ${height * maxEval / (maxEval - minEval)})`)
     .call(d3.axisBottom(x));
   svg.append('g')
+    .attr('class', 'axis axis-y')
     .call(d3.axisLeft(y));
 
+  svg.append('g')
+    .attr('class', 'grid')
+    .attr('transform', `translate(0, ${height})`)
+    .call(
+      d3.axisBottom(x)
+        .tickFormat('')
+        .tickSize(-height)
+    );
 
   const chart = svg.append('g');
   candidates.forEach((cand, i) => {
@@ -132,7 +142,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     const density = kernelDensityEstimator(kernelEpanechnikov(.02), y.ticks(nbBins))(series);
     let maxDensity = d3.max(density, pair => pair[1]);
 
-    const z0 = d3.scaleLinear().range([0, 25])
+    const z0 = d3.scaleLinear().range([0, 30])
       .domain([0, maxDensity]);
     density.splice(0, 0, [minEval, 0]);
     density.splice(density.length, 0, [maxEval, 0]);
@@ -219,36 +229,60 @@ class InfoVisApEvalComponent extends React.Component {
         <form id="approval-vs-eval-filter">
           <div className="form-block">
             <label>Candidates</label>
-            <p>
-              {_.map(candidates, cand =>
-                <label key={`label-${cand}`}>
-                  <input type="checkbox" name="cand" value={cand}
-                    checked={_candidates.indexOf(cand) >= 0} onChange={this.handleCandidatesChange.bind(this, cand)} />
-                  {' '}
-                  {cand}
-                </label>
-              )}
-            </p>
+            <div>
+              <div>
+                {_.map(candidates, cand =>
+                  <label key={`label-${cand}`} className="check-radio">
+                    <input type="checkbox" name="cand" value={cand}
+                      checked={_candidates.indexOf(cand) >= 0} onChange={this.handleCandidatesChange.bind(this, cand)} />
+                    {' '}
+                    <span className="candidate-legend-box" style={{backgroundColor: colors[cand]}} />
+                    {' '}
+                    {cand}
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="form-block">
             <label>Approval</label>
-            <p>
-              <label><input type="radio" name="ap" value={1}
-                checked={_approval === 1} onChange={this.handleApprovalChange.bind(this, 1)} /> Yes</label>
-              <label><input type="radio" name="ap" value={0}
-                checked={_approval !== 1} onChange={this.handleApprovalChange.bind(this, 0)} /> No</label>
-            </p>
+            <div>
+              <div>
+                <label className="check-radio">
+                  <input type="radio" name="ap" value={1}
+                    checked={_approval === 1} onChange={this.handleApprovalChange.bind(this, 1)} />
+                    {' '}
+                    Yes
+                </label>
+                <label className="check-radio">
+                  <input type="radio" name="ap" value={0}
+                    checked={_approval !== 1} onChange={this.handleApprovalChange.bind(this, 0)} />
+                    {' '}
+                    No
+                </label>
+              </div>
+            </div>
           </div>
 
           <div className="form-block">
             <label>Representation</label>
-            <p>
-              <label><input type="radio" name="est-density" value={0}
-                checked={_estDensity !== 1} onChange={this.handleEstDensityChange.bind(this, 0)} /> Histogram</label>
-              <label><input type="radio" name="est-density" value={1}
-                checked={_estDensity === 1} onChange={this.handleEstDensityChange.bind(this, 1)} /> Estimated Prob. Density</label>
-            </p>
+            <div>
+              <div>
+                <label className="check-radio">
+                  <input type="radio" name="est-density" value={0}
+                    checked={_estDensity !== 1} onChange={this.handleEstDensityChange.bind(this, 0)} />
+                    {' '}
+                    Histogram
+                </label>
+                <label className="check-radio" style={{width: '33.333333333%'}}>
+                  <input type="radio" name="est-density" value={1}
+                    checked={_estDensity === 1} onChange={this.handleEstDensityChange.bind(this, 1)} />
+                  {' '}
+                  Estimated Prob. Density
+                </label>
+              </div>
+            </div>
           </div>
         </form>
       </section>
