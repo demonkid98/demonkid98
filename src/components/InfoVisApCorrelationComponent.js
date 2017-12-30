@@ -185,7 +185,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
       .attr('fill', colorScale);
 }
 
-class InfoVisComponent extends React.Component {
+class InfoVisApCorrelationComponent extends React.Component {
   constructor(props) {
     super(props);
   }
@@ -205,4 +205,4 @@ class InfoVisComponent extends React.Component {
   }
 }
 
-export default InfoVisComponent;
+export default InfoVisApCorrelationComponent;
