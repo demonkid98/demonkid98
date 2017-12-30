@@ -19,10 +19,16 @@ body {
 
 .graph-container {
   .axis.axis-x {
-    .tick > text {
-      fill: none;
+    .tick {
+      > line {
+        visibility: hidden;
+      }
+
+      > text {
+        fill: none;
+      }
     }
-    
+
     .domain {
       opacity: .25;
       stroke-dasharray: 1, 2;

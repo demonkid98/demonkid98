@@ -8,6 +8,7 @@ const breadCrumbTitles = {
   '': 'Home',
   example: 'Example',
   'two-deep': 'Two Deep',
+  'info-vis': 'InfoVis',
   'approval-correlation': 'InfoVis Demo',
   'approval-vs-evaluation': 'InfoVis Demo 2',
 };

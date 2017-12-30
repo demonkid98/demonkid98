@@ -149,8 +149,6 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
 
     const color = d3.hsl(colors[cand]);
     if (estDensity) {
-      color.opacity = .75;
- 
       chart.append('path')
         .datum(density)
         .attr('fill', color)
