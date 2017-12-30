@@ -93,7 +93,7 @@ function kernelEpanechnikov(k) {
   };
 }
 
-function approvalVsEvalGraph(dataSets, elementId, candidates, approval) {
+function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensity) {
   const rootEl = d3.select(`#${elementId}`);
   rootEl.selectAll('*').remove();
   const svg = rootEl.append('svg')
@@ -129,7 +129,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval) {
 
     const maxCount = d3.max(bins, bin => bin.length);
 
-    const density = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series);
+    const density = kernelDensityEstimator(kernelEpanechnikov(.02), y.ticks(nbBins))(series);
     let maxDensity = d3.max(density, pair => pair[1]);
 
     const z0 = d3.scaleLinear().range([0, 25])
@@ -138,33 +138,33 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval) {
     density.splice(density.length, 0, [maxEval, 0]);
 
     const color = d3.hsl(colors[cand]);
-    color.opacity = .75;
-
-    chart.append('path')
-      .datum(density)
-      .attr('fill', color)
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1)
-      .attr('stroke-linejoin', 'round')
-      .attr('d',
-        d3.line()
-          .curve(d3.curveBasis)
-          .x(d => x(cand) - z0(d[1]))
-          .y(d => y(d[0]))
-      );
-
-    chart.append('path')
-      .datum(density)
-      .attr('fill', color)
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1)
-      .attr('stroke-linejoin', 'round')
-      .attr('d',
-        d3.line()
-          .curve(d3.curveBasis)
-          .x(d => x(cand) + z0(d[1]))
-          .y(d => y(d[0]))
-      );
+    if (estDensity) {
+      color.opacity = .75;
+ 
+      chart.append('path')
+        .datum(density)
+        .attr('fill', color)
+        .attr('stroke', '#333')
+        .attr('stroke-width', 1)
+        .attr('stroke-linejoin', 'round')
+        .attr('d',
+          d3.line()
+            .curve(d3.curveBasis)
+            .x(d => x(cand) + z0(d[1]))
+            .y(d => y(d[0]))
+        );
+    } else {
+      chart.selectAll(`.bar-${i}`)
+        .data(bins)
+          .enter().append('g')
+            .attr('class', `bar-${i}`)
+            .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
+            .append('rect')
+              .attr('width', d => z(d.length / maxCount))
+              .attr('height', height / nbBins)
+              .attr('fill', color)
+              .attr('stroke', '#333');
+    }
   });
 }
 
@@ -173,17 +173,20 @@ class InfoVisApEvalComponent extends React.Component {
     super(props);
     this.state = {
       candidates,
-      approval: 1
+      approval: 1,
+      estDensity: 0,
     };
   }
 
   componentDidMount() {
     this.dataSets = parseSsvData(vt1, vt2, vt3);
-    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container', this.state.candidates, this.state.approval);
+    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
+      this.state.candidates, this.state.approval, this.state.estDensity);
   }
 
   componentDidUpdate() {
-    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container', this.state.candidates, this.state.approval);
+    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
+      this.state.candidates, this.state.approval, this.state.estDensity);
   }
 
   handleCandidatesChange(cand, e) {
@@ -199,9 +202,14 @@ class InfoVisApEvalComponent extends React.Component {
     this.setState({approval: val});
   }
 
+  handleEstDensityChange(val, e) {
+    this.setState({estDensity: val});
+  }
+
   render() {
     const _candidates = this.state.candidates;
     const _approval = Number(this.state.approval);
+    const _estDensity = Number(this.state.estDensity);
 
     return (
       <section>
@@ -230,6 +238,16 @@ class InfoVisApEvalComponent extends React.Component {
                 checked={_approval === 1} onChange={this.handleApprovalChange.bind(this, 1)} /> Yes</label>
               <label><input type="radio" name="ap" value={0}
                 checked={_approval !== 1} onChange={this.handleApprovalChange.bind(this, 0)} /> No</label>
+            </p>
+          </div>
+
+          <div className="form-block">
+            <label>Representation</label>
+            <p>
+              <label><input type="radio" name="est-density" value={0}
+                checked={_estDensity !== 1} onChange={this.handleEstDensityChange.bind(this, 0)} /> Histogram</label>
+              <label><input type="radio" name="est-density" value={1}
+                checked={_estDensity === 1} onChange={this.handleEstDensityChange.bind(this, 1)} /> Estimated Prob. Density</label>
             </p>
           </div>
         </form>
