@@ -59,6 +59,10 @@ body {
       fill: #fff;
     }
   }
+
+  .outfocus {
+    opacity: .25;
+  }
 }
 
 #approval-vs-eval-filter {
@@ -71,6 +75,10 @@ body {
 
   .form-block {
     margin-bottom: 1rem;
+
+    label, input[type=checkbox], input[type=radio] {
+      cursor: pointer;
+    }
 
     > label {
       float: left;

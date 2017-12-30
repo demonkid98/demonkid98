@@ -93,7 +93,7 @@ function kernelEpanechnikov(k) {
   };
 }
 
-function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensity) {
+function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensity, focusCandidate) {
   const rootEl = d3.select(`#${elementId}`);
   rootEl.selectAll('*').remove();
   const svg = rootEl.append('svg')
@@ -130,6 +130,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     );
 
   const chart = svg.append('g');
+  const _focusCandidate = candidates.indexOf(focusCandidate) >= 0 ? focusCandidate : null;
   candidates.forEach((cand, i) => {
     const series = dataSets.filter(item => item[`AV_${cand}`] === approval).map(item => item[`EV_${cand}`] || 0);
 
@@ -151,6 +152,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     if (estDensity) {
       chart.append('path')
         .datum(density)
+        .attr('class', _focusCandidate && _focusCandidate !== cand ? 'outfocus' : '')
         .attr('fill', color)
         .attr('stroke', '#333')
         .attr('stroke-width', 1)
@@ -165,7 +167,7 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
       chart.selectAll(`.bar-${i}`)
         .data(bins)
           .enter().append('g')
-            .attr('class', `bar-${i}`)
+            .attr('class', `bar-${i} ${_focusCandidate && _focusCandidate !== cand ? 'outfocus' : ''}`)
             .attr('transform', d => `translate(${x(cand)}, ${y(d.x1)})`)
             .append('rect')
               .on('mouseover', (d, j) => {
@@ -202,18 +204,19 @@ class InfoVisApEvalComponent extends React.Component {
       candidates,
       approval: 1,
       estDensity: 0,
+      focusCandidate: null,
     };
   }
 
   componentDidMount() {
     this.dataSets = parseSsvData(vt1, vt2, vt3);
     approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
-      this.state.candidates, this.state.approval, this.state.estDensity);
+      this.state.candidates, this.state.approval, this.state.estDensity, this.state.focusCandidate);
   }
 
   componentDidUpdate() {
     approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
-      this.state.candidates, this.state.approval, this.state.estDensity);
+      this.state.candidates, this.state.approval, this.state.estDensity, this.state.focusCandidate);
   }
 
   handleCandidatesChange(cand, e) {
@@ -233,6 +236,14 @@ class InfoVisApEvalComponent extends React.Component {
     this.setState({estDensity: val});
   }
 
+  handleMouseoverCandidate(cand, e) {
+    this.setState({focusCandidate: cand});
+  }
+
+  handleMouseoutCandidate(cand, e) {
+    this.setState({focusCandidate: null});
+  }
+
   render() {
     const _candidates = this.state.candidates;
     const _approval = Number(this.state.approval);
@@ -249,7 +260,9 @@ class InfoVisApEvalComponent extends React.Component {
             <div>
               <div>
                 {_.map(candidates, cand =>
-                  <label key={`label-${cand}`} className="check-radio">
+                  <label key={`label-${cand}`} className="check-radio"
+                    onMouseOver={this.handleMouseoverCandidate.bind(this, cand)}
+                    onMouseOut={this.handleMouseoutCandidate.bind(this, cand)}>
                     <input type="checkbox" name="cand" value={cand}
                       checked={_candidates.indexOf(cand) >= 0} onChange={this.handleCandidatesChange.bind(this, cand)} />
                     {' '}
