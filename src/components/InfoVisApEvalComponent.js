@@ -17,13 +17,13 @@ import '../styles/info-vis.css';
 
 let ssv = d3.dsvFormat(';');
 
-const margin = { top: 50, right: 0, bottom: 100, left: 45 };
+const margin = { top: 30, right: 0, bottom: 30, left: 45 };
 const width = 640 - margin.left - margin.right;
 const height = 480 - margin.top - margin.bottom;
 const gridSize = Math.floor(height / 11);
 const legendElementWidth = gridSize * 2;
 
-let colors = {
+const colors = {
   'NDA': '#0088c6',
   'MLP': '#83726d',
   'EM': '#ffd850',
@@ -36,6 +36,12 @@ let colors = {
   'FA': '#131413',
   'FF': '#75bbe2',
 };
+const candidates = _.keys(colors);
+
+const minEval = -.1;
+const maxEval = 1;
+
+const nbBins = 22;
 
 function parseSsvData(...files) {
   let rawDataSets = _.map(files, vt => ssv.parse(vt))
@@ -70,13 +76,6 @@ function parseSsvData(...files) {
   return dataSets;
 }
 
-function extractCandidates(columns) {
-  return _.chain(columns)
-    .filter(col => col.startsWith('AV_'))
-    .map(col => col.substr(3))
-    .value();
-}
-
 /**
  * ref: https://bl.ocks.org/mbostock/4341954
  */
@@ -94,28 +93,24 @@ function kernelEpanechnikov(k) {
   };
 }
 
-function approvalVsEvalGraph(dataSets, elementId) {
-  const svg = d3.select(`#${elementId}`)
-    .append('svg')
+function approvalVsEvalGraph(dataSets, elementId, candidates, approval) {
+  const rootEl = d3.select(`#${elementId}`);
+  rootEl.selectAll('*').remove();
+  const svg = rootEl.append('svg')
     .attr('font-size', '80%')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-  const candidates = extractCandidates(dataSets.columns);
-
   const xTicks = _.map(candidates, (c, i) => (width - 100) * i / candidates.length + 50);
   let x = d3.scaleOrdinal().range(xTicks);
   let y = d3.scaleLinear().rangeRound([height, 0]);
   let z = d3.scaleLinear().range([0, 25]);
-  
+
   x.domain(candidates);
-  z.domain([0, 1]);
-  
-  const minEval = -.1;
-  const maxEval = 1;
   y.domain([minEval, maxEval]);
+  z.domain([0, 1]);
 
   svg.append('g')
     .attr('transform', `translate(0, ${height * maxEval / (maxEval - minEval)})`)
@@ -123,46 +118,32 @@ function approvalVsEvalGraph(dataSets, elementId) {
   svg.append('g')
     .call(d3.axisLeft(y));
 
-  const nbBins = 22;
 
   const chart = svg.append('g');
   candidates.forEach((cand, i) => {
-    const series0 = dataSets.filter(item => item[`AV_${cand}`] === 0).map(item => item[`EV_${cand}`] || 0);
-    const series1 = dataSets.filter(item => item[`AV_${cand}`] === 1).map(item => item[`EV_${cand}`] || 0);
+    const series = dataSets.filter(item => item[`AV_${cand}`] === approval).map(item => item[`EV_${cand}`] || 0);
 
-
-    let bins0 = d3.histogram()
+    const bins = d3.histogram()
       .domain(y.domain())
-      .thresholds(y.ticks(nbBins)) (series0);
-    let bins1 = d3.histogram()
-      .domain(y.domain())
-      .thresholds(y.ticks(nbBins)) (series1);
+      .thresholds(y.ticks(nbBins)) (series);
 
-    let maxCount0 = d3.max(bins0, bin => bin.length);
-    let maxCount1 = d3.max(bins1, bin => bin.length);
+    const maxCount = d3.max(bins, bin => bin.length);
 
-    const density0 = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series0);
-    const density1 = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series1);
-    let maxDensity = Math.max(d3.max(density0, pair => pair[1]), d3.max(density1, pair => pair[1]));
+    const density = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series);
+    let maxDensity = d3.max(density, pair => pair[1]);
 
-    let z0 = d3.scaleLinear().range([0, 25])
+    const z0 = d3.scaleLinear().range([0, 25])
       .domain([0, maxDensity]);
-    density0.splice(0, 0, [minEval, 0]);
-    density0.splice(density0.length, 0, [maxEval, 0]);
-
-    let z1 = d3.scaleLinear().range([0, 25])
-      .domain([0, maxDensity]);
-    density1.splice(0, 0, [minEval, 0]);
-    density1.splice(density1.length, 0, [maxEval, 0]);
+    density.splice(0, 0, [minEval, 0]);
+    density.splice(density.length, 0, [maxEval, 0]);
 
     const color = d3.hsl(colors[cand]);
     color.opacity = .75;
-    console.log(density0)
 
     chart.append('path')
-      .datum(density0)
+      .datum(density)
       .attr('fill', color)
-      .attr('stroke', '#c33')
+      .attr('stroke', '#333')
       .attr('stroke-width', 1)
       .attr('stroke-linejoin', 'round')
       .attr('d',
@@ -173,15 +154,15 @@ function approvalVsEvalGraph(dataSets, elementId) {
       );
 
     chart.append('path')
-      .datum(density1)
+      .datum(density)
       .attr('fill', color)
-      .attr('stroke', '#03c')
+      .attr('stroke', '#333')
       .attr('stroke-width', 1)
       .attr('stroke-linejoin', 'round')
       .attr('d',
         d3.line()
           .curve(d3.curveBasis)
-          .x(d => x(cand) + z1(d[1]))
+          .x(d => x(cand) + z0(d[1]))
           .y(d => y(d[0]))
       );
   });
@@ -190,19 +171,68 @@ function approvalVsEvalGraph(dataSets, elementId) {
 class InfoVisApEvalComponent extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      candidates,
+      approval: 1
+    };
   }
 
   componentDidMount() {
-    let dataSets = parseSsvData(vt1, vt2, vt3);
-    console.log(dataSets)
-    approvalVsEvalGraph(dataSets, 'approval-vs-eval-container');
+    this.dataSets = parseSsvData(vt1, vt2, vt3);
+    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container', this.state.candidates, this.state.approval);
+  }
+
+  componentDidUpdate() {
+    approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container', this.state.candidates, this.state.approval);
+  }
+
+  handleCandidatesChange(cand, e) {
+    const _candidates = this.state.candidates;
+    const newCandidates = _candidates.indexOf(cand) >= 0
+      ? _.filter(_candidates, _cand => _cand !== cand)
+      : _candidates.concat([cand]);
+
+    this.setState({candidates: _.intersection(candidates, newCandidates)});
+  }
+
+  handleApprovalChange(val, e) {
+    this.setState({approval: val});
   }
 
   render() {
+    const _candidates = this.state.candidates;
+    const _approval = Number(this.state.approval);
+
     return (
       <section>
         <h1>Information Visualization Demo</h1>
         <div id="approval-vs-eval-container" className="graph-container" />
+
+        <form id="approval-vs-eval-filter">
+          <div className="form-block">
+            <label>Candidates</label>
+            <p>
+              {_.map(candidates, cand =>
+                <label key={`label-${cand}`}>
+                  <input type="checkbox" name="cand" value={cand}
+                    checked={_candidates.indexOf(cand) >= 0} onChange={this.handleCandidatesChange.bind(this, cand)} />
+                  {' '}
+                  {cand}
+                </label>
+              )}
+            </p>
+          </div>
+
+          <div className="form-block">
+            <label>Approval</label>
+            <p>
+              <label><input type="radio" name="ap" value={1}
+                checked={_approval === 1} onChange={this.handleApprovalChange.bind(this, 1)} /> Yes</label>
+              <label><input type="radio" name="ap" value={0}
+                checked={_approval !== 1} onChange={this.handleApprovalChange.bind(this, 0)} /> No</label>
+            </p>
+          </div>
+        </form>
       </section>
     );
   }
