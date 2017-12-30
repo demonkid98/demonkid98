@@ -77,6 +77,23 @@ function extractCandidates(columns) {
     .value();
 }
 
+/**
+ * ref: https://bl.ocks.org/mbostock/4341954
+ */
+function kernelDensityEstimator(kernel, X) {
+  return function(V) {
+    return X.map(function(x) {
+      return [x, d3.mean(V, function(v) { return kernel(x - v); })];
+    });
+  };
+}
+
+function kernelEpanechnikov(k) {
+  return function(v) {
+    return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
+  };
+}
+
 function approvalVsEvalGraph(dataSets, elementId) {
   const svg = d3.select(`#${elementId}`)
     .append('svg')
@@ -96,7 +113,7 @@ function approvalVsEvalGraph(dataSets, elementId) {
   x.domain(candidates);
   z.domain([0, 1]);
   
-  const minEval = -.3;
+  const minEval = -.1;
   const maxEval = 1;
   y.domain([minEval, maxEval]);
 
@@ -106,12 +123,13 @@ function approvalVsEvalGraph(dataSets, elementId) {
   svg.append('g')
     .call(d3.axisLeft(y));
 
-  const nbBins = 26;
+  const nbBins = 22;
 
   const chart = svg.append('g');
   candidates.forEach((cand, i) => {
     const series0 = dataSets.filter(item => item[`AV_${cand}`] === 0).map(item => item[`EV_${cand}`] || 0);
     const series1 = dataSets.filter(item => item[`AV_${cand}`] === 1).map(item => item[`EV_${cand}`] || 0);
+
 
     let bins0 = d3.histogram()
       .domain(y.domain())
@@ -123,28 +141,49 @@ function approvalVsEvalGraph(dataSets, elementId) {
     let maxCount0 = d3.max(bins0, bin => bin.length);
     let maxCount1 = d3.max(bins1, bin => bin.length);
 
-    chart.selectAll(`.bar-neg-${i}`)
-      .data(bins0)
-      .enter().append('g')
-        .attr('class', `bar-neg-${i}`)
-        .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
-        .append('rect')
-          .attr('x', d => - z(d.length / maxCount0))
-          .attr('width', d => z(d.length / maxCount0))
-          .attr('height', height / nbBins)
-          .attr('fill', d3.hsl(colors[cand]).darker(1))
-          .attr('stroke', '#420000');
-          
-    chart.selectAll(`.bar-pos-${i}`)
-      .data(bins1)
-      .enter().append('g')
-        .attr('class', `bar-pos-${i}`)
-        .attr('transform', d => `translate(${x(cand)}, ${y(d.x0)})`)
-        .append('rect')
-          .attr('width', d => z(d.length / maxCount1))
-          .attr('height', height / nbBins)
-          .attr('fill', colors[cand])
-          .attr('stroke', '#00114c');
+    const density0 = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series0);
+    const density1 = kernelDensityEstimator(kernelEpanechnikov(.1), y.ticks(nbBins))(series1);
+    let maxDensity = Math.max(d3.max(density0, pair => pair[1]), d3.max(density1, pair => pair[1]));
+
+    let z0 = d3.scaleLinear().range([0, 25])
+      .domain([0, maxDensity]);
+    density0.splice(0, 0, [minEval, 0]);
+    density0.splice(density0.length, 0, [maxEval, 0]);
+
+    let z1 = d3.scaleLinear().range([0, 25])
+      .domain([0, maxDensity]);
+    density1.splice(0, 0, [minEval, 0]);
+    density1.splice(density1.length, 0, [maxEval, 0]);
+
+    const color = d3.hsl(colors[cand]);
+    color.opacity = .75;
+    console.log(density0)
+
+    chart.append('path')
+      .datum(density0)
+      .attr('fill', color)
+      .attr('stroke', '#c33')
+      .attr('stroke-width', 1)
+      .attr('stroke-linejoin', 'round')
+      .attr('d',
+        d3.line()
+          .curve(d3.curveBasis)
+          .x(d => x(cand) - z0(d[1]))
+          .y(d => y(d[0]))
+      );
+
+    chart.append('path')
+      .datum(density1)
+      .attr('fill', color)
+      .attr('stroke', '#03c')
+      .attr('stroke-width', 1)
+      .attr('stroke-linejoin', 'round')
+      .attr('d',
+        d3.line()
+          .curve(d3.curveBasis)
+          .x(d => x(cand) + z1(d[1]))
+          .y(d => y(d[0]))
+      );
   });
 }
 
