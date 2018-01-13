@@ -17,8 +17,8 @@ import '../styles/info-vis.scss';
 
 let ssv = d3.dsvFormat(';');
 
-const margin = { top: 30, right: 0, bottom: 30, left: 45 };
-const width = 640 - margin.left - margin.right;
+const margin = { top: 0, right: 100, bottom: 50, left: 10 };
+const width = 480 - margin.left - margin.right;
 const height = 480 - margin.top - margin.bottom;
 const gridSize = Math.floor(height / 11);
 const legendElementWidth = gridSize * 2;
@@ -103,31 +103,30 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-  const xTicks = _.map(candidates, (c, i) => (width - 50) * i / candidates.length + 10);
-  let x = d3.scaleOrdinal().range(xTicks);
-  let y = d3.scaleLinear().rangeRound([height, 0]);
+  const yTicks = _.map(candidates, (c, i) => height * (i + 1) / candidates.length);
+  let x = d3.scaleLinear().rangeRound([0, width]);
+  let y = d3.scaleOrdinal().range(yTicks);
   let z = d3.scaleLinear().range([0, 30]);
 
-  x.domain(candidates);
-  y.domain([minEval, maxEval]);
+  x.domain([minEval, maxEval]);
+  y.domain(candidates);
   z.domain([0, 1]);
 
+  candidates.forEach((cand, i) => {
+    svg.append('g')
+      .attr('class', 'axis axis-x partial')
+      .attr('transform', `translate(0, ${y(i)})`)
+      .call(d3.axisBottom(x).tickSize(3));
+  });
   svg.append('g')
     .attr('class', 'axis axis-x')
-    .attr('transform', `translate(0, ${height * maxEval / (maxEval - minEval)})`)
+    .attr('transform', `translate(0, ${height})`)
     .call(d3.axisBottom(x));
-  svg.append('g')
-    .attr('class', 'axis axis-y')
-    .call(d3.axisLeft(y));
 
   svg.append('g')
-    .attr('class', 'grid')
-    .attr('transform', `translate(0, ${height})`)
-    .call(
-      d3.axisBottom(x)
-        .tickFormat('')
-        .tickSize(-height)
-    );
+    .attr('class', 'gridline')
+    .attr('transform', `translate(${x(0)}, 0)`)
+    .call(d3.axisLeft(y).tickFormat('').tickSize(0));
 
   const chart = svg.append('g');
   const _focusCandidate = candidates.indexOf(focusCandidate) >= 0 ? focusCandidate : null;
@@ -135,15 +134,15 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
     const series = dataSets.filter(item => item[`AV_${cand}`] === approval).map(item => item[`EV_${cand}`] || 0);
 
     const bins = d3.histogram()
-      .domain(y.domain())
+      .domain(x.domain())
       .thresholds(nbBins) (series);
 
     const maxCount = d3.max(bins, bin => bin.length);
 
-    const density = kernelDensityEstimator(kernelEpanechnikov(.02), y.ticks(nbBins))(series);
+    const density = kernelDensityEstimator(kernelEpanechnikov(.02), x.ticks(nbBins))(series);
     let maxDensity = d3.max(density, pair => pair[1]);
 
-    const z0 = d3.scaleLinear().range([0, 30])
+    const z0 = d3.scaleLinear().range([0, -30])
       .domain([0, maxDensity]);
     density.splice(0, 0, [minEval, 0]);
     density.splice(density.length, 0, [maxEval, 0]);
@@ -160,21 +159,21 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
         .attr('d',
           d3.line()
             .curve(d3.curveBasis)
-            .x(d => x(cand) + z0(d[1]))
-            .y(d => y(d[0]))
+            .x(d => x(d[0]))
+            .y(d => y(cand) + z0(d[1]))
         );
     } else {
       chart.selectAll(`.bar-${i}`)
         .data(bins)
           .enter().append('g')
             .attr('class', `bar-${i} ${_focusCandidate && _focusCandidate !== cand ? 'outfocus' : ''}`)
-            .attr('transform', d => `translate(${x(cand)}, ${y(d.x1)})`)
+            .attr('transform', d => `translate(${x(d.x0)}, ${y(cand)})`)
             .append('rect')
               .on('mouseover', (d, j) => {
                 const tooltip = svg.append('g')
                   .attr('id', `tooltip-bar-${cand}-${j}`)
                   .attr('class', 'tooltip')
-                  .attr('transform', `translate(${x(cand) + 3}, ${y(d.x0) + 3})`);
+                  .attr('transform', `translate(${x(d.x1) + 3}, ${y(cand) - 40})`);
                 tooltip.append('rect')
                   .attr('width', 100)
                   .attr('height', 38);
@@ -189,8 +188,9 @@ function approvalVsEvalGraph(dataSets, elementId, candidates, approval, estDensi
                 svg.selectAll(`#tooltip-bar-${cand}-${j}`)
                   .remove();
               })
-              .attr('width', d => z(d.length / maxCount))
-              .attr('height', height / nbBins)
+              .attr('width', width / nbBins)
+              .attr('height', d => z(d.length / maxCount))
+              .attr('y', d => -z(d.length / maxCount))
               .attr('fill', color)
               .attr('stroke', '#333');
     }

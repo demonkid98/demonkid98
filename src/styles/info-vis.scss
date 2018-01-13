@@ -18,31 +18,19 @@ body {
 }
 
 .graph-container {
-  .axis.axis-x {
+  .axis.axis-x.partial, .gridline {
     .tick {
       > line {
-        visibility: hidden;
+        opacity: .5;
       }
-
+  
       > text {
         fill: none;
       }
     }
-
+  
     .domain {
-      opacity: .25;
-      stroke-dasharray: 1, 2;
-    }
-  }
-
-
-  .grid {
-    .domain {
-      stroke: none;
-    }
-
-    .tick {
-      opacity: .25;
+      opacity: .5;
       stroke-dasharray: 1, 2;
     }
   }
