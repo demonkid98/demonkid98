@@ -1,0 +1,56 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
+html {
+  background-color: #F0F0F0;
+}
+body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: .85rem;
+  overflow-x: hidden;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+#root {
+  margin: 2rem auto;
+  max-width: calc(100vw - 40px);
+  width: 960px;
+}
+
+h1 {
+  font-size: 1.15rem;
+  margin-bottom: .5rem;
+  margin-top: .5rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: .5rem;
+  margin-top: .5rem;
+}
+
+$color-link: #2e6b57;
+
+a {
+  color: $color-link;
+  text-decoration: none;
+  transition: color .25s;
+
+  &:hover, &:focus, &:active {
+    color: lighten($color-link, 20);
+  }
+}
+
+@mixin clearfix {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.clearfix:after {
+  @include clearfix;
+}

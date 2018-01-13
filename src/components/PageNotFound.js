@@ -1,7 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Code } from '../styles/style';
-import s from '../styles/pageNotFound.style';
 
 const propTypes = {
   location: PropTypes.object.isRequired,
@@ -9,7 +7,7 @@ const propTypes = {
 
 export default function PageNotFound({ location }) {
   return (
-    <p style={s.p}>
+    <p>
       Oops! Page not found!
     </p>
   );

@@ -252,6 +252,7 @@ class InfoVisApEvalComponent extends React.Component {
     return (
       <section>
         <h1>Information Visualization Demo</h1>
+        <h2>Are approval and evaluation consistent for each voter?</h2>
         <div id="approval-vs-eval-container" className="graph-container" />
 
         <form id="approval-vs-eval-filter">

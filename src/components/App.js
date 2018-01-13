@@ -6,14 +6,13 @@ import ExampleComponent from './ExampleComponent';
 import InfoVisComponent from './InfoVisComponent';
 import PageNotFound from './PageNotFound';
 import Breadcrumbs from './Breadcrumbs';
-import s from '../styles/app.style';
+
+import '../styles/global.scss';
 
 export default function App() {
   return (
-    <div style={s.root}>
-      <h1 style={s.title}>trungv</h1>
-
-      <nav style={s.breadcrumbs}>
+    <div id="root">
+      <nav>
         <Breadcrumbs />
       </nav>
 

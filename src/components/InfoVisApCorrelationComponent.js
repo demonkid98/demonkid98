@@ -227,6 +227,7 @@ class InfoVisApCorrelationComponent extends React.Component {
     return (
       <section>
         <h1>Information Visualization Demo</h1>
+        <h2>Which candidates are approved together?</h2>
         <div id="mutual-ap-container" className="graph-container" />
       </section>
     );
