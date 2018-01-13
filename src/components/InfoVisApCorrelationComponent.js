@@ -18,7 +18,7 @@ import '../styles/info-vis.scss';
 
 let ssv = d3.dsvFormat(';');
 
-const margin = { top: 50, right: 0, bottom: 100, left: 45 };
+const margin = { top: 50, right: 100, bottom: 100, left: 45 };
 const width = 640 - margin.left - margin.right;
 const height = 480 - margin.top - margin.bottom;
 const gridSize = Math.floor(height / 11);
@@ -74,6 +74,9 @@ function mutualApprovalHeatMap(dataSets, elementId) {
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
   const candidates = extractCandidates(dataSets.columns);
+  let x = d3.scaleLinear().domain([0, candidates.length]).range([0, height]); // h < w
+  let y = d3.scaleLinear().domain([0, candidates.length]).range([0, height]);
+
   const yLabels = svg.append('g')
     .attr('class', 'axis axis-y')
     .selectAll('.label-candidate-y')
@@ -81,7 +84,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
     .enter().append('text')
       .text(d => d)
       .attr('x', 0)
-      .attr('y', (d, i) => i * gridSize)
+      .attr('y', (d, i) => y(i))
       .style('text-anchor', 'end')
       .attr('transform', `translate(-6, ${gridSize / 1.5})`)
       .attr('class', 'label-candidate label-candidate-y');
@@ -92,7 +95,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
     .data(candidates)
     .enter().append('text')
       .text(d => d)
-      .attr('x', (d, i) => i * gridSize)
+      .attr('x', (d, i) => x(i))
       .attr('y', 0)
       .style('text-anchor', 'middle')
       .attr('transform', `translate(${gridSize / 2}, -6)`)
@@ -105,11 +108,11 @@ function mutualApprovalHeatMap(dataSets, elementId) {
 
     candidates.forEach((cand2, j) => {
       if (cand1 === cand2) {
-        row[cand2] = 0
+        row[cand2] = {i: 0, u: 0, r: 0};
       } else {
         const countIntersection = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 && item[`AV_${cand2}`] == 1).length;
         const countUnion = _.filter(dataSets, item => item[`AV_${cand1}`] == 1 || item[`AV_${cand2}`] == 1).length;
-        row[cand2] = countIntersection / countUnion;
+        row[cand2] = {i: countIntersection, u: countUnion, r: countIntersection / countUnion};
         if (maxVal < countIntersection / countUnion) {
           maxVal = countIntersection / countUnion;
         }
@@ -128,20 +131,45 @@ function mutualApprovalHeatMap(dataSets, elementId) {
       .data(mutualApData)
       .enter().append('g')
         .attr('class', `grid-cell grid-cell-${j}`)
-        .attr('transform', (d, i) => `translate(${i * gridSize}, ${j * gridSize})`)
+        .attr('transform', (d, i) => `translate(${x(i)}, ${y(j)})`)
+        .on('mouseover', (d, i) => {
+          if (i === j) {
+            return;
+          }
+          const tooltip = svg.append('g')
+            .attr('id', `tooltip-cell-${cand}-${i}`)
+            .attr('class', 'tooltip')
+            .attr('transform', `translate(${x(i + 1) + 3}, ${y(j) - 4})`);
+          tooltip.append('rect')
+            .attr('width', 150)
+            .attr('height', 53);
+          tooltip.append('text')
+            .text(`# votes for ${cand} and/or ${candidates[i]}`)
+            .attr('transform', 'translate(5, 15)');
+          tooltip.append('text')
+            .text(`- both: ${d[cand]['i']}`)
+            .attr('transform', 'translate(10, 30)');
+          tooltip.append('text')
+            .text(`- either one: ${d[cand]['u']}`)
+            .attr('transform', 'translate(10, 45)');
+        })
+        .on('mouseout', (d, i) => {
+          svg.selectAll(`#tooltip-cell-${cand}-${i}`)
+            .remove();
+        });
     group.append('rect')
       .attr('stroke', '#333')
-      .attr('fill', d => colorScale(d[cand]))
+      .attr('fill', d => colorScale(d[cand]['r']))
       .attr('width', gridSize)
       .attr('height', gridSize);
     group.append('text')
-      .text(d => numeral(d[cand]).format('0.00'))
+      .text(d => numeral(d[cand]['r']).format('0.00'))
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('visibility', (d, i) => i === j ? 'hidden' : 'visible')
       .attr('x', gridSize / 2)
       .attr('y', gridSize / 2)
-      .attr('stroke', d => d[cand] >= maxVal / 2 ? '#fff' : '#333')
+      .attr('stroke', d => d[cand]['r'] >= maxVal / 2 ? '#fff' : '#333')
       .attr('font-size', '70%');
     group.exit().remove();
   });
