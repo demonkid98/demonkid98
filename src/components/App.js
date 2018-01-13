@@ -11,8 +11,8 @@ import '../styles/global.scss';
 
 export default function App() {
   return (
-    <div id="root">
-      <nav>
+    <div>
+      <nav className="breadcrumbs">
         <Breadcrumbs />
       </nav>
 

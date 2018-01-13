@@ -4,6 +4,28 @@
   clear: both;
 }
 
+body.g {
+  #root {
+    margin: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  .breadcrumbs {
+    display: none;
+  }
+
+  .content {
+    > * {
+      display: none;
+    }
+
+    > .graph-container, > .graph-filter {
+      display: block;
+    }
+  }
+}
+
 .graph-container {
   .axis.axis-x.partial, .gridline {
     .tick {

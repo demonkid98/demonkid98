@@ -5,6 +5,7 @@ import PageNotFound from './PageNotFound';
 
 import _ from 'lodash';
 import numeral from 'numeral';
+import qs from 'querystring';
 
 import vt1 from '../assets/VT1.csv';
 import vt2 from '../assets/VT2.csv';
@@ -18,9 +19,9 @@ import '../styles/info-vis.scss';
 
 let ssv = d3.dsvFormat(';');
 
-const margin = { top: 50, right: 100, bottom: 100, left: 45 };
+const margin = { top: 30, right: 100, bottom: 20, left: 45 };
 const width = 640 - margin.left - margin.right;
-const height = 480 - margin.top - margin.bottom;
+const height = 450 - margin.top - margin.bottom;
 const gridSize = Math.floor(height / 11);
 const legendElementWidth = gridSize * 2;
 
@@ -184,7 +185,7 @@ function mutualApprovalHeatMap(dataSets, elementId) {
 
   let legend = svg.append('g')
     .attr('class', 'scale-color')
-    .attr('transform', `translate(400, 0)`)
+    .attr('transform', `translate(${gridSize * candidates.length + 30}, 0)`)
     .attr('font-size', '70%')
     .attr('text-anchor', 'end');
   legend.append('text')
@@ -219,15 +220,24 @@ class InfoVisApCorrelationComponent extends React.Component {
   }
 
   componentDidMount() {
+    const queries = qs.parse(this.props.location.search.replace('?', ''));
+    if (queries.hasOwnProperty('g')) {
+      document.body.classList.add('g');
+    }
+
     let dataSets = parseSsvData(vt1, vt2, vt3);
     mutualApprovalHeatMap(dataSets, 'mutual-ap-container');
   }
 
+  componentWillUnmount() {
+    document.body.classList.remove('g');
+  }
+
   render() {
     return (
-      <section>
+      <section className="content">
         <h1>Information Visualization Demo</h1>
-        <h2>Which candidates are approved together?</h2>
+        <p>Which candidates are approved together?</p>
         <div id="mutual-ap-container" className="graph-container" />
       </section>
     );

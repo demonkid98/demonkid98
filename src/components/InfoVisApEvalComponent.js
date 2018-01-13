@@ -5,6 +5,7 @@ import PageNotFound from './PageNotFound';
 
 import _ from 'lodash';
 import numeral from 'numeral';
+import qs from 'querystring';
 
 import vt1 from '../assets/VT1.csv';
 import vt2 from '../assets/VT2.csv';
@@ -209,6 +210,11 @@ class InfoVisApEvalComponent extends React.Component {
   }
 
   componentDidMount() {
+    const queries = qs.parse(this.props.location.search.replace('?', ''));
+    if (queries.hasOwnProperty('g')) {
+      document.body.classList.add('g');
+    }
+
     this.dataSets = parseSsvData(vt1, vt2, vt3);
     approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
       this.state.candidates, this.state.approval, this.state.estDensity, this.state.focusCandidate);
@@ -217,6 +223,10 @@ class InfoVisApEvalComponent extends React.Component {
   componentDidUpdate() {
     approvalVsEvalGraph(this.dataSets, 'approval-vs-eval-container',
       this.state.candidates, this.state.approval, this.state.estDensity, this.state.focusCandidate);
+  }
+
+  componentWillUnmount() {
+    document.body.classList.remove('g');
   }
 
   handleCandidatesChange(cand, e) {
@@ -250,12 +260,12 @@ class InfoVisApEvalComponent extends React.Component {
     const _estDensity = Number(this.state.estDensity);
 
     return (
-      <section>
+      <section className="content">
         <h1>Information Visualization Demo</h1>
-        <h2>Are approval and evaluation consistent for each voter?</h2>
+        <p>Are approval and evaluation consistent for each voter?</p>
         <div id="approval-vs-eval-container" className="graph-container" />
 
-        <form id="approval-vs-eval-filter">
+        <form id="approval-vs-eval-filter" className="graph-filter">
           <div className="form-block">
             <label>Candidates</label>
             <div>
